@@ -8,7 +8,7 @@ Lightweight, simple to use GuildWars 2 API Wrapper
 ### How to Install
  
 ```sh
-npm i gw2-api-miniwrapper --save
+npm i gw2_api_miniwrapper --save
 ```
 To transpile / test:
 ```sh
