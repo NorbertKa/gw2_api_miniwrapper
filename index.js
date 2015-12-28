@@ -3,25 +3,14 @@
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.idsBuilder = idsBuilder;
-exports.checkLang = checkLang;
-exports.urlBuilder = urlBuilder;
-
-exports.default = function (options, callback) {
-    if (options && typeof callback === 'function') {
-        urlBuilder(options, function (err, url) {
-            if (err) {
-                callback(err);
-            } else {
-                (0, _nodeFetch2.default)(url).then(function (res) {
-                    return res.text();
-                }).then(function (body) {
-                    callback(null, JSON.parse(body));
-                });
-            }
-        });
-    }
-};
+exports._idBuilder = _idBuilder;
+exports._endpointBuilder = _endpointBuilder;
+exports._createParameters = _createParameters;
+exports._checkLang = _checkLang;
+exports._checkApiKey = _checkApiKey;
+exports._optionChecker = _optionChecker;
+exports.default = _urlBuilder;
+exports._request = _request;
 
 var _lodash = require('lodash');
 
@@ -35,109 +24,231 @@ var _nodeFetch2 = _interopRequireDefault(_nodeFetch);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-function idsBuilder(ids, callback) {
-    if (ids && ids != '') {
-        if (_lodash2.default.isArray(ids)) {
-            var paramUrl = "";
-            _lodash2.default.forEach(ids, function (value) {
-                if (value == _lodash2.default.last(ids)) {
-                    paramUrl += value;
-                } else {
-                    paramUrl += value + ',';
-                }
-            });
-            callback(paramUrl);
-        } else {
+function _idBuilder(ids) {
+    return new Promise(function (fulfill, reject) {
+        if (ids) {
             (function () {
-                var idsArray = [ids];
-                var paramUrl = "";
-                _lodash2.default.forEach(idsArray, function (value) {
-                    if (value == _lodash2.default.last(idsArray)) {
-                        paramUrl += value;
+                var idArray = [];
+                if (typeof ids === 'string' || typeof ids === 'number') {
+                    idArray[0] = ids;
+                } else if (_lodash2.default.isArray(ids)) {
+                    idArray = ids;
+                } else {
+                    reject(new Error('No valid Ids supplied to _idBuilder function, Ids supplied: ' + ids));
+                }
+
+                var idUrl = "";
+                _lodash2.default.forEach(idArray, function (value) {
+                    if (value === _lodash2.default.last(idArray)) {
+                        idUrl += value;
                     } else {
-                        paramUrl += value + ',';
+                        idUrl += value + ',';
                     }
                 });
-                callback(paramUrl);
+                fulfill({
+                    url: idUrl,
+                    array: idArray
+                });
             })();
+        } else {
+            reject(new Error('No Ids supplied to _idBuilder function.'));
         }
-    } else {
-        callback(false);
-    }
+    });
 }
 
-function checkLang(lang, callback) {
-    callback(_lodash2.default.indexOf(['en', 'fr', 'de', 'es'], lang));
-}
+function _endpointBuilder(endpoints) {
+    return new Promise(function (fulfill, reject) {
+        if (endpoints) {
+            var endpointArray = [];
+            if (typeof endpoints === 'string' || typeof endpoints === 'number') {
+                endpointArray[0] = endpoints;
+            } else if (_lodash2.default.isArray(endpoints)) {
+                endpointArray = endpoints;
+            } else {
+                reject(new Error('No valid endpoints supplied to _endpointBuilder function, endpoints supplied: ' + endpoints));
+            }
 
-function urlBuilder(options, callback) {
-    if (options.name) {
-        (function () {
-            var version = options.version || 'v2';
-            var apikey = options.apikey || '';
-            var lang = options.lang || 'en';
-            var input = options.input;
-            var output = options.output;
-            var floor_id = options.floor_id;
-            var region_id = options.region_id;
-            var map_id = options.map_id;
-            var selector = options.selector || '';
-            var selectorPart = "/" + selector;
-            var worldId = options.world;
-            var url = "https://api.guildwars2.com/" + version + "/" + options.name;
-            var urlIds = "";
-            idsBuilder(options.ids, function (ids) {
-                urlIds = ids;
-                checkLang(lang, function (err) {
-                    if (!err) {
-                        if (urlIds) {
-                            if (options.name === 'continents') {
-                                if (map_id && region_id && floor_id && selector) {
-                                    url += "/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + "/maps/" + map_id + "/" + selectorPart + "?" + (0, _querystring.stringify)({
-                                        access_token: apikey,
-                                        lang: lang
-                                    });
-                                    callback(null, url);
-                                } else if (region_id && floor_id) {
-                                    url += "/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + selectorPart + "?" + (0, _querystring.stringify)({
-                                        access_token: apikey,
-                                        lang: lang
-                                    });
-                                    callback(null, url);
-                                } else if (floor_id) {
-                                    url += "/" + options.ids + "/floors/" + floor_id + selectorPart + "?" + (0, _querystring.stringify)({
-                                        access_token: apikey,
-                                        lang: lang
-                                    });
-                                    console.log(url);
-                                    callback(null, url);
-                                } else {
-                                    url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
-                                    callback(null, url);
-                                }
-                            } else {
-                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
-                                callback(null, url);
-                            }
-                        } else {
-                            if (input) {
-                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, input: input, lang: lang });
-                                callback(null, url);
-                            } else if (output) {
-                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, output: output, lang: lang });
-                                callback(null, url);
-                            } else {
-                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, lang: lang });
-                                callback(null, url);
-                            }
-                        }
-                    } else {
-                        callback(new Error('Unsupported language (Supported:[\'en\', \'fr\', \'de\', \'es\']'));
-                    }
-                });
+            var endpointUrl = "";
+            _lodash2.default.forEach(endpointArray, function (value) {
+                endpointUrl += '/' + value;
             });
-        })();
-    } else {
-        callback(new Error('Supply argument: name (options.name)'));
-    }
+            fulfill({
+                url: endpointUrl,
+                array: endpointArray
+            });
+        } else {
+            reject(new Error('No endpoints supplied to _endpointBuilder function.'));
+        }
+    });
+}
+
+function _createParameters(parameters) {
+    return new Promise(function (fulfill, reject) {
+        if (parameters) {
+            (function () {
+                var parametersArray = [];
+                if (_lodash2.default.isArray(parameters)) {
+                    parametersArray = parameters;
+                } else if (_lodash2.default.isObject(parameters)) {
+                    parametersArray[0] = parameters;
+                } else {
+                    reject(new Error('No valid parameters supplied to _createParameters function'));
+                }
+
+                var mergedObject = {};
+                _lodash2.default.forEach(parametersArray, function (value) {
+                    _lodash2.default.merge(mergedObject, value);
+                });
+                if (mergedObject.access_token === '' || mergedObject.access_token === null) mergedObject = _lodash2.default.omit(mergedObject, 'access_token');
+                if (mergedObject.ids === '' || mergedObject.ids === null) mergedObject = _lodash2.default.omit(mergedObject, 'ids');
+                if (mergedObject.output === '' || mergedObject.output === null) mergedObject = _lodash2.default.omit(mergedObject, 'output');
+                if (mergedObject.input === '' || mergedObject.input === null) mergedObject = _lodash2.default.omit(mergedObject, 'input');
+                fulfill('?' + (0, _querystring.stringify)(mergedObject));
+            })();
+        } else {
+            reject(new Error('No parameters supplied to _createParameters function.'));
+        }
+    });
+}
+
+function _checkLang(lang) {
+    return new Promise(function (fulfill, reject) {
+        if (typeof lang === 'string') {
+            if (_lodash2.default.indexOf(['en', 'fr', 'de', 'es'], lang) > -1) {
+                fulfill();
+            } else {
+                reject(new Error('Language (Lang), not supported.'));
+            }
+        } else {
+            reject(new Error('No Lang supplied to _checkLang function.'));
+        }
+    });
+}
+
+function _checkApiKey(apiKey) {
+    return new Promise(function (fulfill, reject) {
+        if (apiKey) {
+            if (apiKey.length === 72) {
+                var splitKey = apiKey.split('-');
+                var check = true;
+                if (splitKey[0].length !== 8) check = false;
+                if (splitKey[1].length !== 4) check = false;
+                if (splitKey[2].length !== 4) check = false;
+                if (splitKey[3].length !== 4) check = false;
+                if (splitKey[4].length !== 20) check = false;
+                if (splitKey[5].length !== 4) check = false;
+                if (splitKey[6].length !== 4) check = false;
+                if (splitKey[7].length !== 4) check = false;
+                if (splitKey[8].length !== 12) check = false;
+                if (check) {
+                    fulfill();
+                } else {
+                    reject(new Error('Invalid apiKey.'));
+                }
+            } else {
+                reject(new Error('Invalid apiKey (string.length).'));
+            }
+        } else {
+            reject(new Error('No apiKey supplied to _checkApiKey function.'));
+        }
+    });
+}
+
+function _optionChecker(options) {
+    return new Promise(function (fulfill, reject) {
+        if (options) {
+            if (options.endpoints) {
+                if (options.apiKey) {
+                    _checkApiKey(options.apiKey).then(function () {
+                        fulfill();
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                } else {
+                    fulfill();
+                }
+            } else {
+                reject(new Error('No valid endpoints supplied.'));
+            }
+        } else {
+            reject(new Error('No valid options supplied.'));
+        }
+    });
+}
+
+function _urlBuilder(options) {
+    return new Promise(function (fulfill, reject) {
+        _optionChecker(options).then(function () {
+            _endpointBuilder(options.endpoints).then(function (endData) {
+                var endpointArray = endData.array;
+                var endpointUrl = endData.url;
+                var endpointMain = endpointArray[0];
+                var apiKey = options.apiKey || '';
+                var lang = options.lang || '';
+                var extraParams = options.parameters || {};
+                if (options.ids) {
+                    _idBuilder(options.ids).then(function (idData) {
+                        _createParameters([{
+                            access_token: apiKey,
+                            lang: lang,
+                            ids: idData.url
+                        }, extraParams]).then(function (parameters) {
+                            _request(endData.url + parameters).then(function (reqData) {
+                                fulfill(reqData);
+                            }).catch(function (error) {
+                                console.log(error);
+                            });
+                        }).catch(function (error) {
+                            reject(error);
+                        });
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                } else if (options.parameters && !options.apiKey) {
+                    _createParameters([{
+                        access_token: apiKey,
+                        lang: lang
+                    }, extraParams]).then(function (parameters) {
+                        _request(endData.url + parameters).then(function (reqData) {
+                            fulfill(reqData);
+                        }).catch(function (error) {
+                            console.log(error);
+                        });
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                } else {
+                    _createParameters([{ access_token: apiKey, lang: lang }, options.parameters]).then(function (parameters) {
+                        _request(endpointUrl + parameters).then(function (requestData) {
+                            fulfill(requestData);
+                        }).catch(function (error) {
+                            reject(error);
+                        });
+                    }).catch(function (error) {
+                        console.log(error);
+                    });
+                }
+            }).catch(function (error) {
+                reject(error);
+            });
+        }).catch(function (error) {
+            reject(error);
+        });
+    });
+}
+
+function _request(url) {
+    return new Promise(function (fulfill, reject) {
+        if (url) {
+            (0, _nodeFetch2.default)("https://api.guildwars2.com/v2" + url).then(function (res) {
+                return res.text();
+            }).then(function (body) {
+                fulfill(JSON.parse(body));
+            }).catch(function (error) {
+                reject(error);
+            });
+        } else {
+            reject(new Error('No url supplied to _request'));
+        }
+    });
 }

@@ -1,6 +1,6 @@
 {
   "name": "gw2_api_miniwrapper",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "Guildwars 2 API Wrapper",
   "main": "index.js",
   "scripts": {

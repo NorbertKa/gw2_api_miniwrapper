@@ -2,8 +2,9 @@
 
 Lightweight, simple to use GuildWars 2 API Wrapper
 
+
 ### Version
-1.0.6
+2.0.0
 
 ### How to Install
  
@@ -16,11 +17,7 @@ git clone https://github.com/mievstac/gw2_api_miniwrapper.git
 cd gw2_api_miniwrapper
 npm install
 ```
-Test:
-```sh
-cd gw2_api_miniwrapper
-npm test
-```
+
 Transpile Es6 --> Es5
 ```sh
 npm install -g gulp
@@ -29,68 +26,87 @@ gulp default
 ```
 
 ### How to use
-*ES 5*
-```javascript
-var gw2Api = require('gw2_api_miniwrapper').default
-gw2Api({
-        name: 'achievements',
-        ids: ['1840','910','2258']
-        },function(err, data){
-            if(!err){
-                console.log(data);
-                }
-        });
-```
-
 *ES 6*
 ```javascript
 import gw2Api from 'gw2_api_miniwrapper';
 gw2Api({
-        name: 'achievements',
-        ids: ['1840','910','2258']
-        },function(err, data){
-            if(!err){
-                console.log(data);
-                }
-        });
+    endpoints: 'items'
+}).then(function (items) {
+    console.log(items);
+}).catch(function (error) {
+    console.log(error);
+});
 ```
 
 ### Examples
 ```javascript
 import gw2Api from 'gw2_api_miniwrapper';
 
-gw2Api({  // get all item Ids
-    name: 'items'
-    },function(err,data){
-        console.log(data);
-    });
-    
-gw2Api({  // get material 5 and 6
-    name: 'materials',
-    ids: ['5','6']
-    },function(err, data){
-        console.log(data);
-    });
-    
-gw2Api({  // get material 5
-    name: 'materials',
-    ids: 5
-    },function(err, data){
-        console.log(data);
-    });
-    
-gw2Api({  // get account info (from apiKey)
-    name: 'account',
-    apikey: <apiKey>,
-    },function(err, data){
-        console.log(data);
-    });
+gw2Api({ // get All items
+    endpoints: 'items'
+}).then(function (items) {
+    console.log(items);
+}).catch(function (error) {
+    console.log(error);
+});
+
+gw2Api({ // get items 1 and 2
+    endpoints: 'items',
+    ids: [1, 2]
+}).then(function (items) {
+    console.log(items);
+}).catch(function (error) {
+    console.log(error);
+});
+
+gw2Api({  // recipes/search, input = 46731
+    endpoints: ['recipes', 'search'],
+    parameters: {
+        input: 46731
+    }
+}).then(function (data) {
+    console.log(data);
+}).catch(function (error) {
+    console.log(error);
+});
+
+gw2Api({  // Account endpoint (apiKey required)
+    endpoints: 'account',
+    apiKey: 'APIKEY_HERE'
+}).then(function (data) {
+    console.log(data);
+}).catch(function (error) {
+    console.log(error);
+})
+
+
+
+gw2Api({  // Gets current daily achievements (expands them)
+    endpoints: ['achievements', 'daily']
+}).then(function (data) {
+    _.forEach(data, function (category) {  // Using Lodash.forEach to loop throught objects  import _ from 'lodash'
+        _.forEach(category, function (achievement) {
+            gw2Api({
+                endpoints: 'achievements',
+                ids: achievement.id
+            })
+                .then(function (achievementData) {
+                    console.log(achievementData);
+                })
+                .catch(function (err) {
+                    console.log(err);
+                })
+        })
+    })
+}).catch(function (error) {
+    console.log(error);
+});
+
 ```
 
 ### Todos
 
- - Add Continent / Map support
- - More tests
+ - TESTS
 
 License
 ----
