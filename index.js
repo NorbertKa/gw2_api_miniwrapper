@@ -48,7 +48,18 @@ function idsBuilder(ids, callback) {
             });
             callback(paramUrl);
         } else {
-            callback('/' + ids);
+            (function () {
+                var idsArray = [ids];
+                var paramUrl = "";
+                _lodash2.default.forEach(idsArray, function (value) {
+                    if (value == _lodash2.default.last(idsArray)) {
+                        paramUrl += value;
+                    } else {
+                        paramUrl += value + ',';
+                    }
+                });
+                callback(paramUrl);
+            })();
         }
     } else {
         callback(false);
@@ -67,24 +78,29 @@ function urlBuilder(options, callback) {
             var lang = options.lang || 'en';
             var input = options.input;
             var output = options.output;
-            var url = "https://api.guildwars2.com/" + version + "/" + options.name + '?';
+            var floor_id = options.flood_id;
+            var region_id = options.region_id;
+            var map_id = options.map_id;
+            var selector = options.selector;
+            var worldId = options.world;
+            var url = "https://api.guildwars2.com/" + version + "/" + options.name;
             var urlIds = "";
             idsBuilder(options.ids, function (ids) {
                 urlIds = ids;
                 checkLang(lang, function (err) {
                     if (!err) {
                         if (urlIds) {
-                            url += (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
+                            url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
                             callback(null, url);
                         } else {
                             if (input) {
-                                url += (0, _querystring.stringify)({ access_token: apikey, input: input, lang: lang });
+                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, input: input, lang: lang });
                                 callback(null, url);
                             } else if (output) {
-                                url += (0, _querystring.stringify)({ access_token: apikey, output: output, lang: lang });
+                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, output: output, lang: lang });
                                 callback(null, url);
                             } else {
-                                url += (0, _querystring.stringify)({ access_token: apikey, lang: lang });
+                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, lang: lang });
                                 callback(null, url);
                             }
                         }

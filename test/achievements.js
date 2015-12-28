@@ -22,7 +22,7 @@ describe('Achievement API', function () {
         it('should return single achievement', function (done) {
             gw2Api({
                 name: 'achievements',
-                ids: ['910']
+                ids: 910
             }, function (err, data) {
                 request('https://api.guildwars2.com/v2/achievements?ids=910')
                     .then(function (res) {
@@ -87,7 +87,7 @@ describe('Achievement API', function () {
         it('should return single group', function (done) {
             gw2Api({
                 name: 'achievements/groups',
-                ids: ['65B4B678-607E-4D97-B458-076C3E96A810']
+                ids: '65B4B678-607E-4D97-B458-076C3E96A810'
             }, function (err, data) {
                 request('https://api.guildwars2.com/v2/achievements/groups/65B4B678-607E-4D97-B458-076C3E96A810')
                     .then(function (res) {

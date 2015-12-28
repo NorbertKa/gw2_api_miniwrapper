@@ -15,7 +15,16 @@ export function idsBuilder(ids, callback) {
             });
             callback(paramUrl);
         } else {
-            callback('/' + ids);
+            let idsArray = [ids];
+            let paramUrl = "";
+            _.forEach(idsArray, function (value) {
+                if (value == _.last(idsArray)) {
+                    paramUrl += value;
+                } else {
+                    paramUrl += value + ','
+                }
+            });
+            callback(paramUrl);
         }
     } else {
         callback(false);

@@ -86,7 +86,7 @@ describe('Guild API', function () {
             it('should return multiple backgrounds', function (done) {
                 gw2Api({
                     name: 'emblem/backgrounds',
-                    ids: ['1','2','3']
+                    ids: [1,2,3]
                 }, function (err, data) {
                     request('https://api.guildwars2.com/v2/emblem/backgrounds?ids=1,2,3')
                         .then(function (res) {
