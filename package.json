@@ -1,11 +1,17 @@
 {
   "name": "gw2_api_miniwrapper",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Guildwars 2 API Wrapper",
   "main": "index.js",
   "scripts": {
     "test": "mocha --timeout 10000"
   },
+  "repository":
+  {
+    "type": "git",
+    "url" : "https://github.com/mievstac/gw2_api_miniwrapper"
+  },
+  "url" : "https://github.com/mievstac/gw2_api_miniwrapper",
   "keywords": [
     "guild",
     "wars",
