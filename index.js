@@ -78,10 +78,11 @@ function urlBuilder(options, callback) {
             var lang = options.lang || 'en';
             var input = options.input;
             var output = options.output;
-            var floor_id = options.flood_id;
+            var floor_id = options.floor_id;
             var region_id = options.region_id;
             var map_id = options.map_id;
-            var selector = options.selector;
+            var selector = options.selector || '';
+            var selectorPart = "/" + selector;
             var worldId = options.world;
             var url = "https://api.guildwars2.com/" + version + "/" + options.name;
             var urlIds = "";
@@ -90,8 +91,34 @@ function urlBuilder(options, callback) {
                 checkLang(lang, function (err) {
                     if (!err) {
                         if (urlIds) {
-                            url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
-                            callback(null, url);
+                            if (options.name === 'continents') {
+                                if (map_id && region_id && floor_id && selector) {
+                                    url += "/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + "/maps/" + map_id + "/" + selectorPart + "?" + (0, _querystring.stringify)({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                    callback(null, url);
+                                } else if (region_id && floor_id) {
+                                    url += "/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + selectorPart + "?" + (0, _querystring.stringify)({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                    callback(null, url);
+                                } else if (floor_id) {
+                                    url += "/" + options.ids + "/floors/" + floor_id + selectorPart + "?" + (0, _querystring.stringify)({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                    console.log(url);
+                                    callback(null, url);
+                                } else {
+                                    url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
+                                    callback(null, url);
+                                }
+                            } else {
+                                url += '?' + (0, _querystring.stringify)({ access_token: apikey, ids: urlIds, lang: lang });
+                                callback(null, url);
+                            }
                         } else {
                             if (input) {
                                 url += '?' + (0, _querystring.stringify)({ access_token: apikey, input: input, lang: lang });

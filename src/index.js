@@ -42,10 +42,11 @@ export function urlBuilder(options, callback) {
         const lang = options.lang || 'en';
         const input = options.input;
         const output = options.output;
-        const floor_id = options.flood_id;
+        const floor_id = options.floor_id;
         const region_id = options.region_id;
         const map_id = options.map_id;
-        const selector = options.selector;
+        const selector = options.selector || '';
+        let selectorPart = "/" + selector;
         const worldId = options.world;
         let url = "https://api.guildwars2.com/" + version + "/" + options.name;
         let urlIds = "";
@@ -54,8 +55,34 @@ export function urlBuilder(options, callback) {
             checkLang(lang, function (err) {
                 if (!err) {
                     if (urlIds) {
-                        url += '?' + stringify({access_token: apikey, ids: urlIds, lang: lang});
-                        callback(null, url);
+                        if (options.name === 'continents') {
+                            if (map_id && region_id && floor_id && selector) {
+                                url +="/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + "/maps/" + map_id + "/" + selectorPart + "?" + stringify({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                callback(null, url);
+                            } else if (region_id && floor_id) {
+                                url +="/" + options.ids + "/floors/" + floor_id + "/regions/" + region_id + selectorPart + "?" + stringify({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                callback(null, url);
+                            } else if (floor_id) {
+                                url += "/" + options.ids + "/floors/" + floor_id + selectorPart + "?" + stringify({
+                                        access_token: apikey,
+                                        lang: lang
+                                    });
+                                console.log(url);
+                                callback(null, url);
+                            } else {
+                                url += '?' + stringify({access_token: apikey, ids: urlIds, lang: lang});
+                                callback(null, url);
+                            }
+                        } else {
+                            url += '?' + stringify({access_token: apikey, ids: urlIds, lang: lang});
+                            callback(null, url);
+                        }
                     } else {
                         if (input) {
                             url += '?' + stringify({access_token: apikey, input: input, lang: lang});
