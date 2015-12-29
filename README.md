@@ -4,7 +4,7 @@ Lightweight, simple to use GuildWars 2 API Wrapper
 
 
 ### Version
-2.0.0
+2.0.3
 
 ### How to Install
  
@@ -29,6 +29,20 @@ gulp default
 *ES 6*
 ```javascript
 import gw2Api from 'gw2_api_miniwrapper';
+
+gw2Api({
+    endpoints: 'items'
+}).then(function (items) {
+    console.log(items);
+}).catch(function (error) {
+    console.log(error);
+});
+```
+
+*ES 5*
+```javascript
+var gw2Api = require('./index').default;
+
 gw2Api({
     endpoints: 'items'
 }).then(function (items) {
@@ -59,16 +73,14 @@ gw2Api({ // get items 1 and 2
     console.log(error);
 });
 
-gw2Api({  // recipes/search, input = 46731
-    endpoints: ['recipes', 'search'],
+gw2Api({ //search for recipe input, ID 46731
+    endpoints: ['recipes','search'],
     parameters: {
-        input: 46731
+        input: '46731' //switch to output: <ID> for output
     }
-}).then(function (data) {
+}).then(function(data){
     console.log(data);
-}).catch(function (error) {
-    console.log(error);
-});
+})
 
 gw2Api({  // Account endpoint (apiKey required)
     endpoints: 'account',
