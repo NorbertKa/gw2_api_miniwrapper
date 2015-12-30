@@ -3,7 +3,7 @@ Lightweight, simple to use GuildWars 2 API Wrapper
 
 
 ### Version
-2.1.2
+2.1.3
 
 ### How to Install
  
@@ -25,6 +25,9 @@ gulp default
 ```
 
 ### How to use
+
+In depth Wiki: https://github.com/mievstac/gw2_api_miniwrapper/wiki
+
 *ES 6*
 ```javascript
 import gw2Api from 'gw2_api_miniwrapper';
