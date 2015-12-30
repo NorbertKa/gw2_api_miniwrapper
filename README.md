@@ -3,7 +3,7 @@ Lightweight, simple to use GuildWars 2 API Wrapper
 
 
 ### Version
-2.1.4
+2.1.5
 
 ### How to Install
  
