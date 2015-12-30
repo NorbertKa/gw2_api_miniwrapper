@@ -1,5 +1,4 @@
 # GuildWars 2 API Wrapper
-# Rewriting the wrapper (gonna add browser support, tests and clean up the code)
 Lightweight, simple to use GuildWars 2 API Wrapper
 
 
