@@ -5,28 +5,28 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports._idBuilder = _idBuilder;
 exports._endpointBuilder = _endpointBuilder;
-exports._createParameters = _createParameters;
 exports._checkLang = _checkLang;
 exports._checkApiKey = _checkApiKey;
 exports._optionChecker = _optionChecker;
-exports.default = _urlBuilder;
-exports._request = _request;
+exports._optionParser = _optionParser;
+exports._urlBuilder = _urlBuilder;
+exports.default = _request;
 
 var _lodash = require('lodash');
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
-var _querystring = require('querystring');
+var _isomorphicFetch = require('isomorphic-fetch');
 
-var _nodeFetch = require('node-fetch');
-
-var _nodeFetch2 = _interopRequireDefault(_nodeFetch);
+var _isomorphicFetch2 = _interopRequireDefault(_isomorphicFetch);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _typeof(obj) { return obj && typeof Symbol !== "undefined" && obj.constructor === Symbol ? "symbol" : typeof obj; }
+
 function _idBuilder(ids) {
     return new Promise(function (fulfill, reject) {
-        if (ids) {
+        if (typeof ids === 'number' || typeof ids === 'string' || _lodash2.default.isArray(ids)) {
             (function () {
                 var idArray = [];
                 if (typeof ids === 'string' || typeof ids === 'number') {
@@ -46,7 +46,7 @@ function _idBuilder(ids) {
                     }
                 });
                 fulfill({
-                    url: idUrl,
+                    urlPart: idUrl,
                     array: idArray
                 });
             })();
@@ -73,40 +73,11 @@ function _endpointBuilder(endpoints) {
                 endpointUrl += '/' + value;
             });
             fulfill({
-                url: endpointUrl,
+                urlPart: endpointUrl,
                 array: endpointArray
             });
         } else {
             reject(new Error('No endpoints supplied to _endpointBuilder function.'));
-        }
-    });
-}
-
-function _createParameters(parameters) {
-    return new Promise(function (fulfill, reject) {
-        if (parameters) {
-            (function () {
-                var parametersArray = [];
-                if (_lodash2.default.isArray(parameters)) {
-                    parametersArray = parameters;
-                } else if (_lodash2.default.isObject(parameters)) {
-                    parametersArray[0] = parameters;
-                } else {
-                    reject(new Error('No valid parameters supplied to _createParameters function'));
-                }
-
-                var mergedObject = {};
-                _lodash2.default.forEach(parametersArray, function (value) {
-                    _lodash2.default.merge(mergedObject, value);
-                });
-                if (mergedObject.access_token === '' || mergedObject.access_token === null) mergedObject = _lodash2.default.omit(mergedObject, 'access_token');
-                if (mergedObject.ids === '' || mergedObject.ids === null) mergedObject = _lodash2.default.omit(mergedObject, 'ids');
-                if (mergedObject.output === '' || mergedObject.output === null) mergedObject = _lodash2.default.omit(mergedObject, 'output');
-                if (mergedObject.input === '' || mergedObject.input === null) mergedObject = _lodash2.default.omit(mergedObject, 'input');
-                fulfill('?' + (0, _querystring.stringify)(mergedObject));
-            })();
-        } else {
-            reject(new Error('No parameters supplied to _createParameters function.'));
         }
     });
 }
@@ -129,27 +100,17 @@ function _checkApiKey(apiKey) {
     return new Promise(function (fulfill, reject) {
         if (apiKey) {
             if (apiKey.length === 72) {
-                var splitKey = apiKey.split('-');
-                var check = true;
-                if (splitKey[0].length !== 8) check = false;
-                if (splitKey[1].length !== 4) check = false;
-                if (splitKey[2].length !== 4) check = false;
-                if (splitKey[3].length !== 4) check = false;
-                if (splitKey[4].length !== 20) check = false;
-                if (splitKey[5].length !== 4) check = false;
-                if (splitKey[6].length !== 4) check = false;
-                if (splitKey[7].length !== 4) check = false;
-                if (splitKey[8].length !== 12) check = false;
-                if (check) {
+                var key = apiKey.split('-')[4];
+                if (key.length === 20) {
                     fulfill();
                 } else {
-                    reject(new Error('Invalid apiKey.'));
+                    reject(new Error('Invalid access_token'));
                 }
             } else {
-                reject(new Error('Invalid apiKey (string.length).'));
+                reject(new Error('Invalid access_token (string.length).'));
             }
         } else {
-            reject(new Error('No apiKey supplied to _checkApiKey function.'));
+            reject(new Error('No access_token supplied to _checkApiKey function.'));
         }
     });
 }
@@ -158,8 +119,22 @@ function _optionChecker(options) {
     return new Promise(function (fulfill, reject) {
         if (options) {
             if (options.endpoints) {
-                if (options.apiKey) {
-                    _checkApiKey(options.apiKey).then(function () {
+                if (options.access_token || options.apikey || options.apiKey) {
+                    _checkApiKey(options.access_token || options.apikey || options.apiKey).then(function () {
+                        if (options.lang) {
+                            _checkLang(options.lang).then(function () {
+                                fulfill();
+                            }).catch(function (error) {
+                                reject(error);
+                            });
+                        } else {
+                            fulfill();
+                        }
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                } else if (options.lang) {
+                    _checkLang(options.lang).then(function () {
                         fulfill();
                     }).catch(function (error) {
                         reject(error);
@@ -176,58 +151,53 @@ function _optionChecker(options) {
     });
 }
 
+function _optionParser(options) {
+    return new Promise(function (fulfill, reject) {
+        if ((typeof options === 'undefined' ? 'undefined' : _typeof(options)) === 'object') {
+            _endpointBuilder(options.endpoints).then(function (_ref) {
+                var endPart = _ref.urlPart;
+
+                var parserData = [{ key: 'endpoints', endPart: endPart }];
+                var data = _lodash2.default.omit(options, 'endpoints');
+                _lodash2.default.forEach(data, function (value, key) {
+                    _idBuilder(value).then(function (_ref2) {
+                        var idPart = _ref2.urlPart;
+
+                        parserData.push({
+                            key: key, idPart: idPart
+                        });
+                    }).catch(function (error) {
+                        reject(error);
+                    });
+                });
+                fulfill(parserData);
+            }).catch(function (error) {
+                reject(error);
+            });
+        } else {
+            reject(new Error('No valid options supplied to _optionParser'));
+        }
+    });
+}
+
 function _urlBuilder(options) {
     return new Promise(function (fulfill, reject) {
         _optionChecker(options).then(function () {
-            _endpointBuilder(options.endpoints).then(function (endData) {
-                var endpointArray = endData.array;
-                var endpointUrl = endData.url;
-                var endpointMain = endpointArray[0];
-                var apiKey = options.apiKey || '';
-                var lang = options.lang || '';
-                var extraParams = options.parameters || {};
-                if (options.ids) {
-                    _idBuilder(options.ids).then(function (idData) {
-                        _createParameters([{
-                            access_token: apiKey,
-                            lang: lang,
-                            ids: idData.url
-                        }, extraParams]).then(function (parameters) {
-                            _request(endData.url + parameters).then(function (reqData) {
-                                fulfill(reqData);
-                            }).catch(function (error) {
-                                console.log(error);
-                            });
-                        }).catch(function (error) {
-                            reject(error);
-                        });
-                    }).catch(function (error) {
-                        reject(error);
-                    });
-                } else if (options.parameters && !options.apiKey) {
-                    _createParameters([{
-                        access_token: apiKey,
-                        lang: lang
-                    }, extraParams]).then(function (parameters) {
-                        _request(endData.url + parameters).then(function (reqData) {
-                            fulfill(reqData);
-                        }).catch(function (error) {
-                            console.log(error);
-                        });
-                    }).catch(function (error) {
-                        reject(error);
-                    });
-                } else {
-                    _createParameters([{ access_token: apiKey, lang: lang }, options.parameters]).then(function (parameters) {
-                        _request(endpointUrl + parameters).then(function (requestData) {
-                            fulfill(requestData);
-                        }).catch(function (error) {
-                            reject(error);
-                        });
-                    }).catch(function (error) {
-                        console.log(error);
-                    });
-                }
+            _optionParser(options).then(function (parsedOptions) {
+                var url = options.url || 'https://api.guildwars2.com/v2';
+                _lodash2.default.forEach(parsedOptions, function (object) {
+                    if (object.key === 'apikey' || object.key === 'apiKey') object.key = 'access_token';
+                    if (object.key === 'endpoints') {
+                        if (_lodash2.default.last(parsedOptions) === object) {
+                            url += object.endPart;
+                        } else {
+                            url += object.endPart + "?";
+                        }
+                    } else if (_lodash2.default.last(parsedOptions) === object) {
+                        url += object.key + '=' + object.idPart;
+                    } else url += object.key + '=' + object.idPart + '&';
+                });
+                fulfill(url);
             }).catch(function (error) {
                 reject(error);
             });
@@ -237,18 +207,22 @@ function _urlBuilder(options) {
     });
 }
 
-function _request(url) {
+function _request(options) {
     return new Promise(function (fulfill, reject) {
-        if (url) {
-            (0, _nodeFetch2.default)("https://api.guildwars2.com/v2" + url).then(function (res) {
-                return res.text();
-            }).then(function (body) {
-                fulfill(JSON.parse(body));
+        if (options) {
+            _urlBuilder(options).then(function (url) {
+                (0, _isomorphicFetch2.default)(url).then(function (res) {
+                    return res.text();
+                }).then(function (body) {
+                    fulfill(JSON.parse(body));
+                }).catch(function (error) {
+                    reject(error);
+                });
             }).catch(function (error) {
                 reject(error);
             });
         } else {
-            reject(new Error('No url supplied to _request'));
+            reject(new Error('No options supplied to _request'));
         }
     });
-}
+};

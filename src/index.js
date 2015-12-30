@@ -1,10 +1,9 @@
 import _ from 'lodash';
-import { stringify } from 'querystring';
-import request from 'node-fetch';
+import request from 'isomorphic-fetch';
 
 export function _idBuilder(ids) {
     return new Promise(function (fulfill, reject) {
-        if (ids) {
+        if (typeof(ids) === 'number' || typeof(ids) === 'string' || _.isArray(ids)) {
             let idArray = [];
             if (typeof(ids) === 'string' || typeof(ids) === 'number') {
                 idArray[0] = ids;
@@ -23,7 +22,7 @@ export function _idBuilder(ids) {
                 }
             });
             fulfill({
-                url: idUrl,
+                urlPart: idUrl,
                 array: idArray
             });
 
@@ -50,7 +49,7 @@ export function _endpointBuilder(endpoints) {
                 endpointUrl += '/' + value;
             });
             fulfill({
-                url: endpointUrl,
+                urlPart: endpointUrl,
                 array: endpointArray
             });
 
@@ -60,33 +59,6 @@ export function _endpointBuilder(endpoints) {
     })
 }
 
-export function _createParameters(parameters) {
-    return new Promise(function (fulfill, reject) {
-        if (parameters) {
-            let parametersArray = [];
-            if (_.isArray(parameters)) {
-                parametersArray = parameters;
-            } else if (_.isObject(parameters)) {
-                parametersArray[0] = parameters;
-            } else {
-                reject(new Error('No valid parameters supplied to _createParameters function'));
-            }
-
-            let mergedObject = {};
-            _.forEach(parametersArray, function (value) {
-                _.merge(mergedObject, value);
-            });
-            if (mergedObject.access_token === '' || mergedObject.access_token === null) mergedObject = _.omit(mergedObject, 'access_token');
-            if (mergedObject.ids === '' || mergedObject.ids === null) mergedObject = _.omit(mergedObject, 'ids');
-            if (mergedObject.output === '' || mergedObject.output === null) mergedObject = _.omit(mergedObject, 'output');
-            if (mergedObject.input === '' || mergedObject.input === null) mergedObject = _.omit(mergedObject, 'input');
-            fulfill('?' + stringify(mergedObject));
-
-        } else {
-            reject(new Error('No parameters supplied to _createParameters function.'));
-        }
-    })
-}
 
 export function _checkLang(lang) {
     return new Promise(function (fulfill, reject) {
@@ -106,27 +78,17 @@ export function _checkApiKey(apiKey) {
     return new Promise(function (fulfill, reject) {
         if (apiKey) {
             if (apiKey.length === 72) {
-                const splitKey = apiKey.split('-');
-                let check = true;
-                if (splitKey[0].length !== 8) check = false;
-                if (splitKey[1].length !== 4) check = false;
-                if (splitKey[2].length !== 4) check = false;
-                if (splitKey[3].length !== 4) check = false;
-                if (splitKey[4].length !== 20) check = false;
-                if (splitKey[5].length !== 4) check = false;
-                if (splitKey[6].length !== 4) check = false;
-                if (splitKey[7].length !== 4) check = false;
-                if (splitKey[8].length !== 12) check = false;
-                if (check) {
-                    fulfill()
+                const key = apiKey.split('-')[4];
+                if (key.length === 20) {
+                    fulfill();
                 } else {
-                    reject(new Error('Invalid apiKey.'))
+                    reject(new Error('Invalid access_token'))
                 }
             } else {
-                reject(new Error('Invalid apiKey (string.length).'))
+                reject(new Error('Invalid access_token (string.length).'))
             }
         } else {
-            reject(new Error('No apiKey supplied to _checkApiKey function.'))
+            reject(new Error('No access_token supplied to _checkApiKey function.'))
         }
     })
 }
@@ -135,8 +97,26 @@ export function _optionChecker(options) {
     return new Promise(function (fulfill, reject) {
         if (options) {
             if (options.endpoints) {
-                if (options.apiKey) {
-                    _checkApiKey(options.apiKey)
+                if (options.access_token || options.apikey || options.apiKey) {
+                    _checkApiKey(options.access_token || options.apikey || options.apiKey)
+                        .then(function () {
+                            if (options.lang) {
+                                _checkLang(options.lang)
+                                    .then(function () {
+                                        fulfill();
+                                    })
+                                    .catch(function (error) {
+                                        reject(error);
+                                    })
+                            } else {
+                                fulfill();
+                            }
+                        })
+                        .catch(function (error) {
+                            reject(error);
+                        })
+                } else if (options.lang) {
+                    _checkLang(options.lang)
                         .then(function () {
                             fulfill();
                         })
@@ -156,74 +136,57 @@ export function _optionChecker(options) {
     })
 }
 
-export default function _urlBuilder(options) {
+export function _optionParser(options) {
+    return new Promise(function (fulfill, reject) {
+        if (typeof(options) === 'object') {
+            _endpointBuilder(options.endpoints)
+                .then(function ({urlPart: endPart}) {
+                    let parserData = [{key: 'endpoints', endPart}];
+                    const data = _.omit(options, 'endpoints');
+                    _.forEach(data, function (value, key) {
+                        _idBuilder(value)
+                            .then(function ({urlPart: idPart}) {
+                                parserData.push({
+                                    key, idPart
+                                })
+                            })
+                            .catch(function (error) {
+                                reject(error);
+                            })
+                    });
+                    fulfill(parserData);
+                })
+                .catch(function (error) {
+                    reject(error);
+                })
+
+        } else {
+            reject(new Error('No valid options supplied to _optionParser'))
+        }
+    })
+}
+
+export function _urlBuilder(options) {
     return new Promise(function (fulfill, reject) {
         _optionChecker(options)
             .then(function () {
-                _endpointBuilder(options.endpoints)
-                    .then(function (endData) {
-                        const endpointArray = endData.array;
-                        const endpointUrl = endData.url;
-                        const endpointMain = endpointArray[0];
-                        const apiKey = options.apiKey || '';
-                        const lang = options.lang || '';
-                        let extraParams = options.parameters || {};
-                        if (options.ids) {
-                            _idBuilder(options.ids)
-                                .then(function (idData) {
-                                    _createParameters([{
-                                        access_token: apiKey,
-                                        lang: lang,
-                                        ids: idData.url
-                                    }, extraParams])
-                                        .then(function (parameters) {
-                                            _request(endData.url + parameters)
-                                                .then(function (reqData) {
-                                                    fulfill(reqData);
-                                                })
-                                                .catch(function (error) {
-                                                    console.log(error);
-                                                })
-                                        })
-                                        .catch(function (error) {
-                                            reject(error);
-                                        })
-                                })
-                                .catch(function (error) {
-                                    reject(error);
-                                })
-                        } else if (options.parameters && !options.apiKey) {
-                            _createParameters([{
-                                access_token: apiKey,
-                                lang: lang
-                            }, extraParams])
-                                .then(function (parameters) {
-                                    _request(endData.url + parameters)
-                                        .then(function (reqData) {
-                                            fulfill(reqData);
-                                        })
-                                        .catch(function (error) {
-                                            console.log(error);
-                                        })
-                                })
-                                .catch(function (error) {
-                                    reject(error);
-                                })
-                        } else {
-                            _createParameters([{access_token: apiKey, lang: lang}, options.parameters])
-                                .then(function (parameters) {
-                                    _request(endpointUrl + parameters)
-                                        .then(function (requestData) {
-                                            fulfill(requestData);
-                                        })
-                                        .catch(function (error) {
-                                            reject(error);
-                                        })
-                                })
-                                .catch(function (error) {
-                                    console.log(error);
-                                })
-                        }
+                _optionParser(options)
+                    .then(function (parsedOptions) {
+                        let url = options.url || 'https://api.guildwars2.com/v2';
+                        _.forEach(parsedOptions, function (object) {
+                            if (object.key === 'apikey' || object.key === 'apiKey') object.key = 'access_token';
+                            if (object.key === 'endpoints') {
+                                if (_.last(parsedOptions) === object) {
+                                    url += object.endPart;
+                                } else {
+                                    url += object.endPart + "?";
+                                }
+                            }
+                            else if (_.last(parsedOptions) === object) {
+                                url += object.key + '=' + object.idPart;
+                            } else url += object.key + '=' + object.idPart + '&';
+                        });
+                        fulfill(url);
                     })
                     .catch(function (error) {
                         reject(error);
@@ -233,24 +196,29 @@ export default function _urlBuilder(options) {
                 reject(error);
             })
     })
-
 }
 
-export function _request(url) {
+export default function _request(options) {
     return new Promise(function (fulfill, reject) {
-        if (url) {
-            request("https://api.guildwars2.com/v2" + url)
-                .then(function (res) {
-                    return res.text();
-                })
-                .then(function (body) {
-                    fulfill(JSON.parse(body));
+        if (options) {
+            _urlBuilder(options)
+                .then(function (url) {
+                    request(url)
+                        .then(function (res) {
+                            return res.text();
+                        })
+                        .then(function (body) {
+                            fulfill(JSON.parse(body));
+                        })
+                        .catch(function (error) {
+                            reject(error);
+                        })
                 })
                 .catch(function (error) {
                     reject(error);
                 })
         } else {
-            reject(new Error('No url supplied to _request'))
+            reject(new Error('No options supplied to _request'))
         }
     })
-}
+};
