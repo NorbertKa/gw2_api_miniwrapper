@@ -3,7 +3,10 @@ Lightweight, simple to use GuildWars 2 API Wrapper
 
 
 ### Version
-2.1.5
+2.1.6
+
+## Added Browser support (webpack / browserify)
+
 
 ### How to Install
  
