@@ -91,27 +91,6 @@ gw2Api({  // Account endpoint (apiKey required)
 
 
 
-gw2Api({  // Gets current daily achievements (expands them)
-    endpoints: ['achievements', 'daily']
-}).then(function (data) {
-    _.forEach(data, function (category) {  // Using Lodash.forEach to loop throught objects  import _ from 'lodash'
-        _.forEach(category, function (achievement) {
-            gw2Api({
-                endpoints: 'achievements',
-                ids: achievement.id
-            })
-                .then(function (achievementData) {
-                    console.log(achievementData);
-                })
-                .catch(function (err) {
-                    console.log(err);
-                })
-        })
-    })
-}).catch(function (error) {
-    console.log(error);
-});
-
 ```
 
 ### Todos
