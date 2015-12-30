@@ -75,9 +75,7 @@ gw2Api({ // get items 1 and 2
 
 gw2Api({ //search for recipe input, ID 46731
     endpoints: ['recipes','search'],
-    parameters: {
-        input: '46731' //switch to output: <ID> for output
-    }
+    input: '46731' //switch to output: <ID> for output
 }).then(function(data){
     console.log(data);
 })
