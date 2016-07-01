@@ -13,14 +13,7 @@ export function _idBuilder(ids) {
                 reject(new Error('No valid Ids supplied to _idBuilder function, Ids supplied: ' + ids))
             }
 
-            let idUrl = "";
-            _.forEach(idArray, function (value) {
-                if (value === _.last(idArray)) {
-                    idUrl += value;
-                } else {
-                    idUrl += value + ',';
-                }
-            });
+            let idUrl = _.reduce(idArray, function(acc, curr) { return acc + "," + curr; });
             fulfill({
                 urlPart: idUrl,
                 array: idArray
